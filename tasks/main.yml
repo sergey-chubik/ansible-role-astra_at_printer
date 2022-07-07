@@ -1,0 +1,53 @@
+---
+# tasks file for astra_at_printer
+- block:
+    - name: astra_at_printer | Settings Printer files in Astra1.6-1.7
+      template:
+        src: "{{ astra_at_printer_templates_path }}/{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - { src: 'cupsd.conf.j2', dest: '/etc/cups/cupsd.conf' }
+        - { src: 'cups.service.j2', dest: '/etc/systemd/system/cups.service' }
+      register: astra_at_printer_cups_edit
+    
+    - block:
+        - name: astra_at_printer | Disable cups.socket in Astra1.6-1.7
+          systemd:
+            name: cups.socket
+            state: stopped
+            enabled: no
+        
+        - name: astra_at_printer | Remove file cups.sock in Astra1.6-1.7
+          file:
+            path: /var/run/cups/cups.sock
+            state: absent
+        
+        - name: astra_at_printer | Start cups.service, also daemon-reload in Astra1.6-1.7
+          systemd:
+            state: restarted
+            daemon_reload: yes
+            name: cups.service
+      when: astra_at_printer_cups_edit.changed
+  when: ansible_facts.distribution_version == "1.7_x86-64" or ansible_facts.distribution_version == "1.6"
+
+- block:
+    - name: astra_at_printer | Settings Printer files in Astra1.5
+      lineinfile:
+        path: "{{ item.path }}"
+        regexp: "{{ item.src }}"
+        line: "{{ item.dest }}"
+      loop:
+        - { path: '/etc/parsec/privsock.conf', src: '^/usr/sbin/cupsd', dest: '/usr/sbin/cupsd' }
+        - { path: '/etc/default/cups', src: '^PATH=/usr/lib/parsec/bin.*', dest: 'PATH=/usr/lib/parsec/bin:$PATH' }
+        - { path: '/etc/cups/cupsd.conf', src: '^MacEnable=.*', dest: 'MacEnable=Off' }
+      register: astra_at_printer_cups_edit15
+
+    - name: astra_at_printer | Disable cups.socket in Astra1.5
+      service:
+        name: cups
+        state: restarted
+      when: astra_at_printer_cups_edit15.changed
+  when: ansible_facts.distribution_version == "1.5"

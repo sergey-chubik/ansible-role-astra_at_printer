@@ -1,0 +1,15 @@
+[Unit]
+Description=CUPS Scheduler
+Documentation=man:cupsd(8)
+Wants=nslcd.service nscd.service
+After=sssd.service nslcd.service nscd.service
+
+[Service]
+ExecStart=/usr/sbin/cupsd -l
+Type=simple
+Restart=on-failure
+CapabilitiesParsec=PARSEC_CAP_PRIV_SOCK
+
+[Install]
+Also=cups.socket cups.path
+WantedBy=printer.target

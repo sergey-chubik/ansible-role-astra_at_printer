@@ -1,0 +1,4 @@
+---
+# defaults file for astra_at_printer
+astra_at_printer_files_path: "{{ role_path }}/files"
+astra_at_printer_templates_path: "{{ role_path }}/templates"
